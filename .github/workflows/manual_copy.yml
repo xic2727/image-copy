@@ -1,0 +1,44 @@
+name: Manual Copy Image
+
+run-name: ${{ github.actor }} run manual copy image
+
+on:
+  workflow_dispatch:
+    inputs:
+      all:
+        description: '多架构'
+        required: true
+        default: '否'
+        type: choice
+        options:
+          - '是'
+          - '否'
+      source:
+        description: '源镜像 repo:tag'
+        required: true
+        type: string
+      dest:
+        description: '目标镜像 repo:tag'
+        required: true
+        type: string
+
+jobs:
+  copy-image:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Use Skopeo Copy
+        run: |
+          skopeo --version
+          skopeo login --username=${{ secrets.REGISTRY_USER }} --password=${{ secrets.REGISTRY_PASSWORD }} ${{ secrets.REGISTRY }}
+          echo "Copying ${{ github.event.inputs.source }} => ${{ github.event.inputs.dest }}"
+          echo "All: ${{ github.event.inputs.all }}"
+          if [ ${{ github.event.inputs.all }} == '是'  ]; then
+          skopeo copy --all "docker://${{ github.event.inputs.source }}" "docker://${{ github.event.inputs.dest }}"
+          else
+          skopeo copy "docker://${{ github.event.inputs.source }}" "docker://${{ github.event.inputs.dest }}"
+          fi
+          echo "Copied ${{ github.event.inputs.source }} => ${{ github.event.inputs.dest }}"
